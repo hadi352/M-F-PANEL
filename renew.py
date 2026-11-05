@@ -18,7 +18,6 @@ def main():
         )
         page = context.new_page()
         try:
-            print("ورود به صفحه لاگین...")
             page.goto("https://control.katabump.com/auth/login", wait_until="domcontentloaded", timeout=60000)
             page.wait_for_timeout(6000)
 
@@ -27,28 +26,40 @@ def main():
             page.locator('button[type="submit"], input[type="submit"]').first.click()
             page.wait_for_timeout(8000)
 
-            print(f"رفتن به سرور {SERVER_ID}...")
             page.goto(f"https://control.katabump.com/server/{SERVER_ID}", wait_until="domcontentloaded", timeout=60000)
             page.wait_for_timeout(6000)
 
-            print("آدرس فعلی:", page.url)
-            print("عنوان صفحه:", page.title())
-            page.screenshot(path="error_screenshot.png")
-
             if "login" in page.url:
-                raise Exception("لاگین انجام نشد (هنوز در صفحه لاگین هستیم)")
-
-            btn = page.locator('button:has-text("Renew"), a:has-text("Renew")')
-            if btn.count() > 0 and btn.first.is_visible():
-                btn.first.click()
-                print("دکمه Renew کلیک شد")
-                page.wait_for_timeout(3000)
                 page.screenshot(path="error_screenshot.png")
-            else:
-                print("دکمه Renew فعال نیست یا هنوز زمان تمدید نرسیده")
+                raise Exception("لاگین انجام نشد")
+
+            btn = page.locator('button:has-text("Restart"), a:has-text("Restart")').first
+            if btn.count() == 0 or not btn.is_visible():
+                page.screenshot(path="error_screenshot.png")
+                raise Exception("دکمه Restart پیدا نشد")
+
+            btn.click()
+            page.wait_for_timeout(2000)
+
+            # اگر پنجره تأیید باز شد، تأیید می‌کنیم
+            confirm = page.locator(
+                '.modal button:has-text("Restart"), .modal button:has-text("Yes"), '
+                '.modal button:has-text("Confirm"), [role="dialog"] button:has-text("Restart"), '
+                '[role="dialog"] button:has-text("Yes"), [role="dialog"] button:has-text("Confirm")'
+            )
+            if confirm.count() > 0 and confirm.first.is_visible():
+                confirm.first.click()
+                print("تأیید ریستارت زده شد")
+
+            page.wait_for_timeout(5000)
+            page.screenshot(path="error_screenshot.png")
+            print("✅ ریستارت انجام شد")
         except Exception as e:
             print("خطا:", e)
-            page.screenshot(path="error_screenshot.png")
+            try:
+                page.screenshot(path="error_screenshot.png")
+            except Exception:
+                pass
             raise
         finally:
             browser.close()

@@ -1,26 +1,35 @@
 name: Katabump Auto Renew
+
 on:
   schedule:
     - cron: '0 12 */3 * *'
   workflow_dispatch:
+
 jobs:
   renew:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-      - run: |
+
+      - name: Install Playwright
+        run: |
           pip install playwright
           playwright install --with-deps chromium
-      - run: python renew.py
+
+      - name: Run renew script
         env:
           KATABUMP_EMAIL: ${{ secrets.KATABUMP_EMAIL }}
           KATABUMP_PASSWORD: ${{ secrets.KATABUMP_PASSWORD }}
           SERVER_ID: ${{ secrets.SERVER_ID }}
-      - if: failure()
+        run: python renew.py
+
+      - name: Upload screenshot
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: error-screenshot
+          name: screenshot
           path: error_screenshot.png
